@@ -1,0 +1,4 @@
+# The image builds from this folder; keep a local `go build` binary and test output out of its context
+/warehouse
+*.test
+*.out

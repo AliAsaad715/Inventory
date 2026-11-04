@@ -1,0 +1,20 @@
+# Writes the Go code for the shared contract into gen/. Run `buf generate` from this folder
+# after changing anything under contracts/, and commit the result; CI fails when gen/ is stale.
+version: v2
+clean: true
+managed:
+  enabled: true
+  override:
+    # Sets go_package here, so the proto stays free of language options
+    - file_option: go_package_prefix
+      value: github.com/AliAsaad715/Shop/warehouse/gen
+plugins:
+  # The plugins are the tool lines in go.mod, so the generated code always matches the runtime libraries
+  - local: [go, tool, protoc-gen-go]
+    out: gen
+    opt: paths=source_relative
+  - local: [go, tool, protoc-gen-go-grpc]
+    out: gen
+    opt: paths=source_relative
+inputs:
+  - directory: ../contracts
