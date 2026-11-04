@@ -37,3 +37,30 @@ docker compose down
 ```
 
 `docker compose down` keeps the database volume.
+
+## Warehouse tests (R2-05)
+
+With Docker running, Go 1.27.3 and a C compiler available for the race detector,
+run from the repository root:
+
+```powershell
+go test -race -count=1 -timeout=5m ./...
+```
+
+`TestStorePostgres` starts a disposable PostgreSQL 17 container using
+[Testcontainers for Go](https://golang.testcontainers.org/modules/postgres/).
+It loads the same `db/001_schema.sql` and `db/002_seed.sql` used by Compose and
+resets the test tables before each case. It never connects to the application's
+database. Docker is required; unavailable Docker fails the integration tests.
+
+The tests cover 20 simultaneous reservations for the last unit (one accepted,
+19 rejected), repeat reservations for the same order, stock restored exactly
+once by Release, and reservations refused after Release. They also check early
+Release tombstones, complete rollback on a shortage, duplicate product lines,
+and concurrent retries and releases.
+
+To see just the PostgreSQL cases and the last-unit race result:
+
+```powershell
+go test -race -count=1 -timeout=5m -v -run '^TestStorePostgres$' ./internal/inventory
+```
