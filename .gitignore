@@ -1,0 +1,2 @@
+# The binary a local `go build ./cmd/warehouse` writes at the root
+/warehouse
