@@ -2,3 +2,6 @@
 /warehouse
 *.test
 *.out
+/.git
+/.env
+/.env.*

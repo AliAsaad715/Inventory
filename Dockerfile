@@ -1,4 +1,4 @@
-# Build from the repository root: docker build -t shop-warehouse warehouse
+# Build from this folder: docker build -t inventory-warehouse .
 # The context is this folder alone: gen/ is committed, so the build needs nothing from contracts/
 FROM golang:1.27.3 AS build
 WORKDIR /src
@@ -15,7 +15,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/warehouse ./cmd/wa
 FROM gcr.io/distroless/static-debian13:nonroot
 COPY --from=build /out/warehouse /warehouse
 
-# uid 65532; the port is reached only inside the Docker network, never published to the host
+# uid 65532; Compose publishes the gRPC port on the host's loopback interface
 USER nonroot:nonroot
 EXPOSE 50051
 # Exec form, since there is no shell; the binary asks its own gRPC health service

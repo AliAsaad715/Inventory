@@ -15,7 +15,6 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	inventoryv1 "github.com/AliAsaad715/Shop/warehouse/gen/inventory/v1"
-	"github.com/AliAsaad715/Shop/warehouse/internal/inventory"
 )
 
 // fakeDB answers each ping with the error the test set last.
@@ -78,7 +77,7 @@ func TestWatchDatabaseFollowsTheDatabase(t *testing.T) {
 }
 
 func TestHealthcheckExitCodes(t *testing.T) {
-	addr, hs, _ := startServer(t, inventory.NewServer())
+	addr, hs, _ := startServer(t, inventoryv1.UnimplementedInventoryServiceServer{})
 	getenv := env(map[string]string{envAddr: addr})
 	var stdout, stderr bytes.Buffer
 

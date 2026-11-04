@@ -66,7 +66,7 @@ func run(ctx context.Context, cfg config, log *slog.Logger) error {
 		return fmt.Errorf("listen on %s: %w", cfg.addr, err)
 	}
 
-	srv, hs := newServer(log, inventory.NewServer())
+	srv, hs := newServer(log, inventory.NewServer(inventory.NewStore(pool)))
 
 	// Stopped and waited for before the deferred pool.Close, so no ping outlives the pool
 	watchCtx, stopWatching := context.WithCancel(ctx)

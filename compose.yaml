@@ -1,0 +1,35 @@
+services:
+  inventory-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: inventory
+      POSTGRES_USER: inventory
+      POSTGRES_PASSWORD: ${INVENTORY_DB_PASSWORD:-inventory_local}
+    volumes:
+      - inventory-data:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  warehouse:
+    build:
+      context: .
+    environment:
+      INVENTORY_GRPC_ADDR: :50051
+      INVENTORY_DATABASE_URL: host=inventory-db port=5432 dbname=inventory user=inventory sslmode=disable
+      PGPASSWORD: ${INVENTORY_DB_PASSWORD:-inventory_local}
+      INVENTORY_LOG_LEVEL: ${INVENTORY_LOG_LEVEL:-info}
+    ports:
+      - "127.0.0.1:${INVENTORY_GRPC_PORT:-50051}:50051"
+    depends_on:
+      inventory-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  inventory-data:

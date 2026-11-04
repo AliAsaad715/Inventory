@@ -22,14 +22,15 @@ import (
 	"github.com/AliAsaad715/Shop/warehouse/internal/inventory"
 )
 
-func TestSkeletonAnswersUnimplementedAndLogsTheOrder(t *testing.T) {
-	addr, _, logs := startServer(t, inventory.NewServer())
+func TestInvalidReserveLogsTheOrder(t *testing.T) {
+	// Invalid input is rejected before accessing the store.
+	addr, _, logs := startServer(t, inventory.NewServer(nil))
 	client := inventoryv1.NewInventoryServiceClient(dial(t, addr))
 
 	const orderID = "3f8e2a64-9b1c-4c2e-8f7d-5a6b7c8d9e0f"
 	_, err := client.Reserve(t.Context(), &inventoryv1.ReserveRequest{OrderId: orderID})
-	if status.Code(err) != codes.Unimplemented {
-		t.Fatalf("Reserve = %v, want UNIMPLEMENTED until R2-04", err)
+	if status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("Reserve = %v, want INVALID_ARGUMENT for empty items", err)
 	}
 
 	calls := logs.entries(t, "grpc call")
@@ -37,9 +38,9 @@ func TestSkeletonAnswersUnimplementedAndLogsTheOrder(t *testing.T) {
 		t.Fatalf("logged %d calls, want 1", len(calls))
 	}
 	for key, want := range map[string]any{
-		"level":    "ERROR",
+		"level":    "INFO",
 		"method":   inventoryv1.InventoryService_Reserve_FullMethodName,
-		"code":     "Unimplemented",
+		"code":     "InvalidArgument",
 		"order_id": orderID,
 	} {
 		if got := calls[0][key]; got != want {
@@ -125,7 +126,7 @@ func TestServeReturnsTheServeError(t *testing.T) {
 	}
 	lis.Close() // Serve fails at once on a closed listener
 
-	srv, hs := newServer(discardLogger(), inventory.NewServer())
+	srv, hs := newServer(discardLogger(), inventoryv1.UnimplementedInventoryServiceServer{})
 	if err := serve(t.Context(), srv, hs, lis, time.Second, discardLogger()); err == nil {
 		t.Error("serve = nil, want the error from Serve")
 	}
