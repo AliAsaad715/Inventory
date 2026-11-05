@@ -126,7 +126,7 @@ func TestServeReturnsTheServeError(t *testing.T) {
 	}
 	lis.Close() // Serve fails at once on a closed listener
 
-	srv, hs := newServer(discardLogger(), inventoryv1.UnimplementedInventoryServiceServer{})
+	srv, hs := newServer(discardLogger(), inventoryv1.UnimplementedInventoryServiceServer{}, 0)
 	if err := serve(t.Context(), srv, hs, lis, time.Second, discardLogger()); err == nil {
 		t.Error("serve = nil, want the error from Serve")
 	}
@@ -180,8 +180,14 @@ func reserveAsync(t *testing.T, addr string) <-chan error {
 // its address, its health server and its log.
 func startServer(t *testing.T, inv inventoryv1.InventoryServiceServer) (string, *health.Server, *logBuffer) {
 	t.Helper()
+	return startDelayedServer(t, inv, 0)
+}
+
+// startDelayedServer is startServer with INVENTORY_DELAY_MS set to delay.
+func startDelayedServer(t *testing.T, inv inventoryv1.InventoryServiceServer, delay time.Duration) (string, *health.Server, *logBuffer) {
+	t.Helper()
 	logs, log := captureLogs()
-	srv, hs := newServer(log, inv)
+	srv, hs := newServer(log, inv, delay)
 	lis, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -194,7 +200,7 @@ func startServer(t *testing.T, inv inventoryv1.InventoryServiceServer) (string, 
 // startServing runs serve, as main does, until ctx ends; the channel gets what it returns.
 func startServing(t *testing.T, ctx context.Context, inv inventoryv1.InventoryServiceServer, grace time.Duration) (string, *health.Server, <-chan error) {
 	t.Helper()
-	srv, hs := newServer(discardLogger(), inv)
+	srv, hs := newServer(discardLogger(), inv, 0)
 	lis, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)

@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
+	"time"
 )
 
 // env is a getenv over a fixed set of variables.
@@ -25,6 +26,9 @@ func TestLoadConfigDefaults(t *testing.T) {
 	if cfg.logLevel != slog.LevelInfo {
 		t.Errorf("log level = %v, want INFO", cfg.logLevel)
 	}
+	if cfg.delay != 0 {
+		t.Errorf("delay = %v, want none", cfg.delay)
+	}
 	if db := cfg.db.ConnConfig; db.User != "inventory" || db.Host != "inventory-db" || db.Port != 5432 || db.Database != "inventory" {
 		t.Errorf("database = %s@%s:%d/%s, want inventory@inventory-db:5432/inventory", db.User, db.Host, db.Port, db.Database)
 	}
@@ -35,9 +39,14 @@ func TestLoadConfigReadsEveryVariable(t *testing.T) {
 		envAddr:        "127.0.0.1:6000",
 		envLogLevel:    "debug",
 		envDatabaseURL: "host=db port=5433 dbname=stock user=warehouse password=pw pool_max_conns=8",
+		envDelay:       "2500",
 	}))
 	if err != nil {
 		t.Fatalf("loadConfig: %v", err)
+	}
+
+	if cfg.delay != 2500*time.Millisecond {
+		t.Errorf("delay = %v, want 2.5s", cfg.delay)
 	}
 
 	if cfg.addr != "127.0.0.1:6000" {
@@ -58,12 +67,13 @@ func TestLoadConfigReportsEveryProblemAtOnce(t *testing.T) {
 	_, err := loadConfig(env(map[string]string{
 		envAddr:     "50051",
 		envLogLevel: "verbose",
+		envDelay:    "-5",
 	}))
 	if err == nil {
 		t.Fatal("loadConfig accepted a broken configuration")
 	}
 
-	for _, want := range []string{envAddr, envLogLevel, envDatabaseURL + " is required"} {
+	for _, want := range []string{envAddr, envLogLevel, envDelay, envDatabaseURL + " is required"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("the error doesn't mention %s:\n%v", want, err)
 		}
