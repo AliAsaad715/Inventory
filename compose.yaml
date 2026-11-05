@@ -1,12 +1,14 @@
 services:
   inventory-db:
-    image: postgres:17-alpine
+    # The same image as inventory-db in Shop's compose
+    image: postgres:18
     environment:
       POSTGRES_DB: inventory
       POSTGRES_USER: inventory
       POSTGRES_PASSWORD: ${INVENTORY_DB_PASSWORD:-inventory_local}
     volumes:
-      - inventory-data:/var/lib/postgresql/data
+      # Mounted at the parent: PostgreSQL 18+ keeps its data in a versioned folder under it
+      - inventory-data:/var/lib/postgresql
       - ./db:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]

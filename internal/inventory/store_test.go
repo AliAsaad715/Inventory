@@ -209,7 +209,8 @@ func newPostgresPool(t *testing.T, schemaPath, seedPath string) *pgxpool.Pool {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(t.Context(), 90*time.Second)
 	defer cancel()
-	container, err := postgres.Run(ctx, "postgres:17-alpine",
+	// The image Shop's compose runs as inventory-db, so the tests prove the PostgreSQL that serves orders
+	container, err := postgres.Run(ctx, "postgres:18",
 		postgres.WithDatabase("warehouse_test"),
 		postgres.WithUsername("warehouse_test"),
 		postgres.WithPassword("warehouse_test"),
