@@ -36,7 +36,9 @@ docker compose logs --tail 100 warehouse inventory-db
 docker compose down
 ```
 
-`docker compose down` keeps the database volume.
+`docker compose down` keeps the database volume. A volume created before the move to PostgreSQL 18 holds
+PostgreSQL 17 data, which 18 can't start on: remove it once with `docker compose down -v`, and the next start
+runs the schema and seed again.
 
 ## Warehouse tests (R2-05)
 
@@ -47,7 +49,7 @@ run from the repository root:
 go test -race -count=1 -timeout=5m ./...
 ```
 
-`TestStorePostgres` starts a disposable PostgreSQL 17 container using
+`TestStorePostgres` starts a disposable PostgreSQL 18 container, the image Shop's compose runs, using
 [Testcontainers for Go](https://golang.testcontainers.org/modules/postgres/).
 It loads the same `db/001_schema.sql` and `db/002_seed.sql` used by Compose and
 resets the test tables before each case. It never connects to the application's
