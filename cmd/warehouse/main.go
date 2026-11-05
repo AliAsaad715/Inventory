@@ -66,7 +66,11 @@ func run(ctx context.Context, cfg config, log *slog.Logger) error {
 		return fmt.Errorf("listen on %s: %w", cfg.addr, err)
 	}
 
-	srv, hs := newServer(log, inventory.NewServer(inventory.NewStore(pool)))
+	srv, hs := newServer(log, inventory.NewServer(inventory.NewStore(pool)), cfg.delay)
+	if cfg.delay > 0 {
+		log.Warn("INVENTORY_DELAY_MS holds every inventory call before it is handled; use it only for demos",
+			"delay_ms", cfg.delay.Milliseconds())
+	}
 
 	// Stopped and waited for before the deferred pool.Close, so no ping outlives the pool
 	watchCtx, stopWatching := context.WithCancel(ctx)

@@ -15,13 +15,17 @@ import (
 )
 
 // newServer builds the gRPC server: the inventory service, the standard health service,
-// and the interceptors that log each call and contain a panicking one. Health starts as
-// NOT_SERVING; watchDatabase turns it SERVING once the database answers.
-func newServer(log *slog.Logger, inv inventoryv1.InventoryServiceServer) (*grpc.Server, *health.Server) {
-	srv := grpc.NewServer(
-		// The first runs outermost, so the log line also records a call that panicked
-		grpc.ChainUnaryInterceptor(logCalls(log), recoverPanics(log)),
-	)
+// and the interceptors that log each call and contain a panicking one. A delay above zero
+// holds each inventory call that long first (INVENTORY_DELAY_MS, for demos). Health starts
+// as NOT_SERVING; watchDatabase turns it SERVING once the database answers.
+func newServer(log *slog.Logger, inv inventoryv1.InventoryServiceServer, delay time.Duration) (*grpc.Server, *health.Server) {
+	// The first runs outermost, so the log line also records a call that panicked
+	interceptors := []grpc.UnaryServerInterceptor{logCalls(log), recoverPanics(log)}
+	if delay > 0 {
+		// Innermost, so the log line records the wait and the caller giving up during it
+		interceptors = append(interceptors, delayCalls(delay))
+	}
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(interceptors...))
 	inventoryv1.RegisterInventoryServiceServer(srv, inv)
 
 	hs := health.NewServer()

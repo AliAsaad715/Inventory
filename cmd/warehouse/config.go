@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -16,6 +18,7 @@ const (
 	envAddr        = "INVENTORY_GRPC_ADDR"    // optional: where the gRPC server listens
 	envDatabaseURL = "INVENTORY_DATABASE_URL" // required: the warehouse's own database
 	envLogLevel    = "INVENTORY_LOG_LEVEL"    // optional: debug, info, warn or error
+	envDelay       = "INVENTORY_DELAY_MS"     // optional, demos only: hold each inventory call this long
 )
 
 const defaultAddr = ":50051"
@@ -24,6 +27,7 @@ type config struct {
 	addr     string
 	logLevel slog.Level
 	db       *pgxpool.Config
+	delay    time.Duration
 }
 
 // loadConfig reads the settings through getenv (os.Getenv outside tests) and reports
@@ -40,6 +44,14 @@ func loadConfig(getenv func(string) string) (config, error) {
 	if level := getenv(envLogLevel); level != "" {
 		if err := cfg.logLevel.UnmarshalText([]byte(level)); err != nil {
 			errs = append(errs, fmt.Errorf("%s must be debug, info, warn or error, not %q", envLogLevel, level))
+		}
+	}
+
+	if raw := strings.TrimSpace(getenv(envDelay)); raw != "" {
+		if ms, err := strconv.Atoi(raw); err != nil || ms < 0 {
+			errs = append(errs, fmt.Errorf("%s must be a whole number of milliseconds, 0 or more, not %q", envDelay, raw))
+		} else {
+			cfg.delay = time.Duration(ms) * time.Millisecond
 		}
 	}
 
